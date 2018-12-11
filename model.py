@@ -1,8 +1,4 @@
 import numpy as np
-import numpy.matlib as mb
-from scipy import *
-from scipy.linalg import norm, pinv
-
 
 class model_linear:
     def __init__(self,D):
@@ -25,8 +21,8 @@ class model_linear:
         return (self.w).T@X
     
 class model_RBFN:
-    #This code has largely inspired by a the code written by Thomas Rückstieß
-    #He can be found at the follwing address :-
+    #This code has largely been inspired by a the code written by Thomas Rückstieß
+    #He can be found at the following address :-
     #http://www.rueckstiess.net/research/snippe-ts/show/72d2363e (18-12-11, 17:30)
     def __init__(self, D, numCenters,h):
         self.h = h #smoothing factor
@@ -41,9 +37,9 @@ class model_RBFN:
     def _calcAct(self, X):
         # calculate activations of RBFs
         N=X.shape[1]
-        G = zeros((self.numCenters,N))
+        G = np.zeros((self.numCenters,N))
         for indexC in range(self.numCenters):
-            G[indexC,:]=np.exp(-1/(2*self.widths[indexC])*sum((np.array([self.centers[:,indexC] for i in range(N)]).T-X)**2,axis=0))
+            G[indexC,:]=np.exp(-1/(2*self.widths[indexC])*np.sum((np.array([self.centers[:,indexC] for i in range(N)]).T-X)**2,axis=0))
         return G
      
     def train(self,L):
@@ -52,12 +48,12 @@ class model_RBFN:
         target = L[-1,:] #1xN
         
         # choose random center vectors from training set
-        rnd_idx = random.permutation(N)[:self.numCenters]
+        rnd_idx = np.random.permutation(N)[:self.numCenters]
         self.centers = np.array([features[:,i] for i in rnd_idx]).T
         
         # computes widths
-        Number = zeros((self.numCenters,))
-        DistCentroids = zeros((self.numCenters,))
+        Number = np.zeros((self.numCenters,))
+        DistCentroids = np.zeros((self.numCenters,))
         for i in range(N): #for each point, determine its centroïd
             Dist = np.sum((self.centers-np.array([features[:,i] for k in range(self.numCenters)]).T)**2,axis=0)
             indexMin=np.argmin(Dist)
@@ -75,7 +71,7 @@ class model_RBFN:
          
     def eval(self, X):
         G = self._calcAct(X[:-1,:])
-        Y = dot(G.T, self.W)
+        Y = np.dot(G.T, self.W)
         return Y
     
     def error(self,T):
