@@ -1,3 +1,3 @@
-# MachineLearningProject
-Project of Machine Learning : UCL
+# Machine Learning Project
+LELEC2870 : UCL
 Thiran Guillaume - Verecken Julien
