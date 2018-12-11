@@ -1,26 +1,52 @@
 import numpy as np
 
-class model_linear:
-    def __init__(self,D):
-        self.w = np.zeros((D+1,))
+class model:
+    def __init__(self):
+        self.target = None
+        self.y = None
+        
+    def error(self):
+        return np.sqrt(np.mean((self.y-self.target)**2))
     
-    def _bias(self,X):
+class linear_regression(model):
+    def _bias(X):
         N = X.shape[1]
         return np.concatenate((np.ones((1,N)),X),axis=0)
     
     def train(self,L):
-        features = self._bias(L[:-1,:]) # features DxN
+        features = linear_regression._bias(L[:-1,:]) # features DxN
         target = L[-1,:]
         self.w = np.linalg.lstsq(features.T,target,rcond=None)[0] # solve by minimizing norm2
     
-    def error(self,T):
-        return np.sqrt(np.mean((self.eval(T)-T[-1,:])**2))
-    
     def eval(self,T):
-        X = self._bias(T[:-1,:])
-        return (self.w).T@X
+        X = linear_regression._bias(T[:-1,:])
+        self.target = T[-1,:]
+        self.y = (self.w).T@X
+        return self.y
     
-class model_RBFN:
+class knn(model):
+    def __init__(self,K):
+        self.k = K
+        
+    def train(self,L):
+        self.learning_data = L[:-1,:]
+        self.learning_target = L[-1,:]
+        
+    def eval(self,T):
+        y = np.zeros(T[-1,:].shape)
+        for i in range(0,T.shape[1]):
+            dist_array = np.zeros((self.learning_data.shape[1],))
+            for j in range(0,self.learning_data.shape[1]):
+                dist_array[j] = np.linalg.norm(T[:-1,i]-self.learning_data[:,j],ord=2,axis=0)
+            
+            min_index = np.argsort(dist_array)
+            y[i] = np.mean(self.learning_target[min_index[:self.k+1]])
+        
+        self.target = T[-1,:]
+        self.y = y
+        return self.y
+    
+class rbfn(model):
     #This code has largely been inspired by a the code written by Thomas Rückstieß
     #He can be found at the following address :-
     #http://www.rueckstiess.net/research/snippe-ts/show/72d2363e (18-12-11, 17:30)
@@ -71,15 +97,6 @@ class model_RBFN:
          
     def eval(self, X):
         G = self._calcAct(X[:-1,:])
-        Y = np.dot(G.T, self.W)
-        return Y
-    
-    def error(self,T):
-        return np.sqrt(np.mean((self.eval(T)-T[-1,:])**2))
-    
-    
-    
-    
-    
-    
-        
+        self.y = np.dot(G.T, self.W)
+        self.target = X[-1,:]
+        return self.y
