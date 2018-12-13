@@ -1,4 +1,5 @@
 import numpy as np
+import vq_methods as vqm
 
 class model:
     def __init__(self):
@@ -64,12 +65,17 @@ class rbfn(model):
     #This code has largely been inspired by a the code written by Thomas Rückstieß
     #He can be found at the following address :-
     #http://www.rueckstiess.net/research/snippe-ts/show/72d2363e (18-12-11, 17:30)
-    def __init__(self, D, numCenters,h):
-        self.h = h                              #smoothing factor
-        self.numCenters = numCenters
-        self.centers = np.zeros((D,numCenters)) #c_i
-        self.widths = np.zeros((numCenters,))   #sigma_i
-        self.W = np.zeros((numCenters,))        #w_i
+    def __init__(self, D):
+        #metaparameters
+        self.h = 500                              #smoothing factor
+        self.numCenters = 5
+        self.alpha = 1
+        self.beta = 1
+        self.epochs = 10
+        
+        self.centers = np.zeros((D,self.numCenters)) #c_i
+        self.widths = np.zeros((self.numCenters,))   #sigma_i
+        self.W = np.zeros((self.numCenters,))        #w_i
      
     def _calcAct(self, X):
         # calculate activations of RBFs
@@ -86,8 +92,8 @@ class rbfn(model):
         target = L[-1,:] #1xN
         
         # choose random center vectors from training set
-        rnd_idx = np.random.permutation(N)[:self.numCenters]
-        self.centers = np.array([features[:,i] for i in rnd_idx]).T
+        self.centers = vqm.fsens_learning(features,self.alpha,self.beta,
+                                          self.numCenters,self.epochs)
         
         # computes widths
         Number = np.zeros((self.numCenters,))
@@ -113,3 +119,19 @@ class rbfn(model):
         self.y = np.dot(G.T, self.W)
         self.target = X[-1,:]
         return self.y
+    
+    def meta_find(self,LM,validation_fun,h_list,numCenters_list):
+        
+        n=numCenters_list.shape[0]
+        m=h_list.shape[0]
+        error_array = np.zeros((m,n))
+        for i,h in enumerate(h_list):
+            for j,numCenters in enumerate(numCenters_list):
+                self.h = h
+                self.numCenters = numCenters
+                error_array[i,j] = validation_fun(self,LM)
+            
+        i,j = np.unravel_index(np.argmin(error_array),(m,n))
+        self.h = h_list[i]
+        self.numCenters = numCenters_list[j]
+        return (self.h,self.numCenters,error_array)

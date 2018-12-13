@@ -57,20 +57,43 @@ test_set = dataset[:,shuffled_index[index_LM:]]
 #plt.plot(test_set[-1,:],y_lin,'.')
 #plt.show()
 
-""" knn model"""
-k_list = np.arange(1,4)
-m_knn = model.knn()
-k_opt,error_array = m_knn.meta_find(LM,vm.leave_one_out,k_list)
+#""" knn model"""
+#k_list = np.arange(1,11)
+#my_knn = model.knn()
+#k_opt,error_array_knn = my_knn.meta_find(LM,vm.default,k_list)
+#
+#print("=== knn ===")
+#print("k_opt = {}".format(k_opt))
+#print("error_array = ")
+#print(error_array_knn)
+#
+#my_knn.train(LM)
+#y = my_knn.evaluate(test_set)
+#e_knn = my_knn.error()
+#
+#print('error = ',e_knn)
+#plt.figure()
+#plt.plot(test_set[-1,:],y,'.')
+#plt.show()
 
-print("k_opt = {}".format(k_opt))
+""" rbfn model """
+h_list = np.linspace(450,550,11)
+numCenters_list = np.arange(10,31)
+my_rbfn = model.rbfn(8)
+h_opt,numCenters_opt, error_array_rbfn = my_rbfn.meta_find(
+        LM,vm.default,h_list,numCenters_list)
+
+print("== rbfn ===")
+print("h_opt = {}".format(h_opt))
+print("numCenters_opt = {}".format(numCenters_opt))
 print("error_array = ")
-print(error_array)
+print(error_array_rbfn)
 
-m_knn.train(LM)
-y = m_knn.evaluate(test_set)
-e_knn = m_knn.error()
+my_rbfn.train(LM)
+y = my_rbfn.evaluate(test_set)
+e_rbfn = my_rbfn.error()
 
-print('knn error = ',e_knn)
+print('error = ',e_rbfn)
 plt.figure()
 plt.plot(test_set[-1,:],y,'.')
 plt.show()
