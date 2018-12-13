@@ -58,9 +58,9 @@ test_set = dataset[:,shuffled_index[index_LM:]]
 #plt.show()
 
 """ knn model"""
-k_list = np.arange(1,11)
+k_list = np.arange(1,4)
 m_knn = model.knn()
-k_opt,error_array = m_knn.meta_find(LM,vm.default,k_list)
+k_opt,error_array = m_knn.meta_find(LM,vm.leave_one_out,k_list)
 
 print("k_opt = {}".format(k_opt))
 print("error_array = ")
