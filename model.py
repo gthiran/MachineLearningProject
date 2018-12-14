@@ -10,14 +10,18 @@ class model:
         return np.sqrt(np.mean((self.y-self.target)**2))
     
 class linear_regression(model):
+    def __init__(self,D):
+        model()
+        self.w = np.zeros((D,))
+    
     def _bias(X):
-        N = X.shape[1]
-        return np.concatenate((np.ones((1,N)),X),axis=0)
+        return np.concatenate((np.ones((1,X.shape[1])),X),axis=0)
     
     def train(self,L):
         features = linear_regression._bias(L[:-1,:]) # features DxN
         target = L[-1,:]
-        self.w = np.linalg.lstsq(features.T,target,rcond=None)[0] # solve by minimizing norm2
+        self.w = np.linalg.lstsq(features.T,target,rcond=None)[0] 
+        # solve by minimizing norm2
     
     def evaluate(self,T):
         X = linear_regression._bias(T[:-1,:])
@@ -37,11 +41,13 @@ class knn(model):
         self.learning_target = L[-1,:]
         
     def evaluate(self,T):
-        y = np.zeros(T[-1,:].shape)
+        y = np.empty(T[-1,:].shape)
+        dist_array = np.empty((self.learning_data.shape[1],))
+        
         for i in range(0,T.shape[1]):
-            dist_array = np.zeros((self.learning_data.shape[1],))
             for j in range(0,self.learning_data.shape[1]):
-                dist_array[j] = np.linalg.norm(T[:-1,i]-self.learning_data[:,j],ord=2,axis=0)
+                dist_array[j] = np.linalg.norm(T[:-1,i]-self.learning_data[:,j],
+                                               ord=2,axis=0)
             
             min_index = np.argsort(dist_array)
             y[i] = np.mean(self.learning_target[min_index[:self.k+1]])
@@ -57,8 +63,8 @@ class knn(model):
             self.k = k
             error_array[index] = validation_fun(self,LM)
             
-        best_k = k_list[np.argmin(error_array)]
-        self.k = best_k
+        # best k
+        self.k = k_list[np.argmin(error_array)]
         return (self.k,error_array)
     
 class rbfn(model):
@@ -82,8 +88,8 @@ class rbfn(model):
         N=X.shape[1]
         G = np.zeros((self.numCenters,N))
         for indexC in range(self.numCenters):
-            G[indexC,:]=np.exp(-1/(2*self.widths[indexC])*np.sum((np.array(
-                    [self.centers[:,indexC] for i in range(N)]).T-X)**2,axis=0))
+            s = np.sum((np.vstack(self.centers[:,indexC])-X)**2,axis=0)
+            G[indexC,:]=np.exp(-1/(2*self.widths[indexC])*s)
         return G
      
     def train(self,L):
@@ -99,8 +105,8 @@ class rbfn(model):
         Number = np.zeros((self.numCenters,))
         DistCentroids = np.zeros((self.numCenters,))
         for i in range(N): #for each point, determine its centroïd
-            Dist = np.sum((self.centers-np.array([features[:,i] for k in 
-                                                  range(self.numCenters)]).T)**2,axis=0)
+            Dist = np.sum((self.centers-np.vstack(features[:,i]))**2,axis=0)
+            
             indexMin=np.argmin(Dist)
             #and then add the distance
             DistCentroids[indexMin]+= np.sqrt(Dist[indexMin])      
@@ -116,7 +122,7 @@ class rbfn(model):
          
     def evaluate(self, X):
         G = self._calcAct(X[:-1,:])
-        self.y = np.dot(G.T, self.W)
+        self.y = G.T@self.W
         self.target = X[-1,:]
         return self.y
     
@@ -130,7 +136,8 @@ class rbfn(model):
                 self.h = h
                 self.numCenters = numCenters
                 error_array[i,j] = validation_fun(self,LM)
-            
+            print(i/h_list.size)
+        
         i,j = np.unravel_index(np.argmin(error_array),(m,n))
         self.h = h_list[i]
         self.numCenters = numCenters_list[j]
