@@ -52,7 +52,7 @@ def kfold(model,LM,*is_leave_one_out):
     if len(is_leave_one_out)==1:
         N=length_dataset
     else:
-        N = 5
+        N = 3
         
     length_block =int(length_dataset/N);
     error_Meta = np.zeros((N,))

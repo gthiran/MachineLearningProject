@@ -2,90 +2,98 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import model
-import validation_methods as vm
-import feature_selection_methods as fsm
-import plot_methods as myplt
+import validation_method as vm
 
-plt.close('all')
-print("""\n# =============================================================================
-# dataset import 
-# =============================================================================\n""")
-X1 = pd.read_csv("datasets\X1_t1.csv").transpose()
+
+X1 = pd.read_csv("X1_t1.csv").transpose()
 dataset = X1.values
-learning_ratio = 0.8
+
+
+
+
+
+# find meta params
+#nshuffle = 3
+#k = np.arange(1,51)
+#e_knn = np.zeros(k.shape)
+#for i in range(len(k)):
+#    
+#    for j in range(nshuffle):
+#        shuffled_index = np.random.permutation(length_dataset)
+#        
+#        learning_set = dataset[:,shuffled_index[:index_learning_set]]
+#        meta_set = dataset[:,shuffled_index[index_learning_set:index_meta_set]]
+#        test_set = dataset[:,shuffled_index[index_meta_set:]]
+#        
+#        m_knn = model.knn(k[i])
+#        m_knn.train(learning_set)
+#        y = m_knn.evaluate(meta_set)
+#        e_knn[i] += m_knn.error()
+#    
+#    print("k = {}".format(k[i]))
+#    e_knn[i] /= nshuffle
+#    
+#plt.figure()
+#plt.plot(k,e_knn,linewidth=1.2)
+#plt.grid()
+#plt.show()
+    
+learning_ratio = 0.75
 length_dataset = dataset.shape[1]
 index_LM = int(learning_ratio*length_dataset)
 shuffled_index = np.random.permutation(length_dataset)
-
-myplt.plt_dataset(dataset)
-       
-print("""\n# =============================================================================
-# feature selection
-# =============================================================================\n""")
+        
 LM = dataset[:,shuffled_index[:index_LM]]
-T = dataset[:,shuffled_index[index_LM:]]
-LM[:-1,:],mean_LM,std_LM = fsm.normalize(LM[:-1,:])
-T[:-1,:],mean_T,std_T = fsm.normalize(T[:-1,:])
+test_set = dataset[:,shuffled_index[index_LM:]]
 
-LM_U,LM_sing = fsm.pca(LM[:-1,:])
-print("the singular values of x are : ")
-print(LM_sing)
-print()
+#"""linear model"""
+#m_lin = model.linear_regression()
+#m_lin.train(learning_set)
+#y_lin = m_lin.evaluate(test_set)
+#e_lin = m_lin.error()
+#
+#print('linear error = ',e_lin)
+#plt.figure()
+#plt.plot(test_set[-1,:],y_lin,'.')
+#plt.show()
 
-LM_corr = fsm.correlation(LM)
-print("the correlations between inputs and output are : ")
-print(LM_corr)
+#""" knn model"""
+#k_list = np.arange(1,11)
+#my_knn = model.knn()
+#k_opt,error_array_knn = my_knn.meta_find(LM,vm.default,k_list)
+#
+#print("=== knn ===")
+#print("k_opt = {}".format(k_opt))
+#print("error_array = ")
+#print(error_array_knn)
+#
+#my_knn.train(LM)
+#y = my_knn.evaluate(test_set)
+#e_knn = my_knn.error()
+#
+#print('error = ',e_knn)
+#plt.figure()
+#plt.plot(test_set[-1,:],y,'.')
+#plt.show()
 
-Q = 6
-LM_selected = np.concatenate((LM_U[:,:Q].T@LM[:-1,:],np.array([LM[-1,:]])),axis=0)
-T_selected  = np.concatenate((LM_U[:,:Q].T@T[:-1,:],np.array([T[-1,:]])),axis=0)
-
-print("""\n# =============================================================================
-# linear model
-# =============================================================================\n""")
-m_lin = model.linear_regression(Q)
-m_lin.train(LM_selected)
-y_lin = m_lin.evaluate(T_selected)
-e_lin = m_lin.error()
-
-print('linear error = ',e_lin)
-myplt.plt_compare_results(y_lin,T[-1,:],"LINEAR")
-
-print("""\n# =============================================================================
-# knn model
-# =============================================================================\n""")
-k_list = np.arange(1,11)
-my_knn = model.knn()
-k_opt,error_array_knn = my_knn.meta_find(LM_selected,vm.kfold,k_list)
-
-print("k_opt = {}".format(k_opt))
-print("error_array = ")
-print(error_array_knn)
-
-my_knn.train(LM_selected)
-y_knn = my_knn.evaluate(T_selected)
-e_knn = my_knn.error()
-
-print('error = ',e_knn)
-myplt.plt_compare_results(y_knn,T[-1,:],"KNN")
-
-print("""\n# =============================================================================
-# rbfn model
-# =============================================================================\n""")
-h_list = np.linspace(1000,10000,11)
-numCenters_list = np.arange(31,41)
-my_rbfn = model.rbfn(Q)
+""" rbfn model """
+h_list = np.linspace(450,550,11)
+numCenters_list = np.arange(10,31)
+my_rbfn = model.rbfn(8)
 h_opt,numCenters_opt, error_array_rbfn = my_rbfn.meta_find(
-        LM_selected,vm.default,h_list,numCenters_list)
+        LM,vm.default,h_list,numCenters_list)
 
+print("== rbfn ===")
 print("h_opt = {}".format(h_opt))
 print("numCenters_opt = {}".format(numCenters_opt))
 print("error_array = ")
 print(error_array_rbfn)
 
-my_rbfn.train(LM_selected)
-y_rbfn = my_rbfn.evaluate(T_selected)
+my_rbfn.train(LM)
+y = my_rbfn.evaluate(test_set)
 e_rbfn = my_rbfn.error()
 
 print('error = ',e_rbfn)
-myplt.plt_compare_results(y_rbfn,T[-1,:],"RBFN")
+plt.figure()
+plt.plot(test_set[-1,:],y,'.')
+plt.show()
