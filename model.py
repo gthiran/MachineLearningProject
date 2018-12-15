@@ -29,12 +29,16 @@ class linear_regression(model):
         self.y = (self.w).T@X
         return self.y
     
+    def meta_find(self,LM,validation_fun):
+        pass
+    
 class knn(model):
     def __init__(self):
         model()
         self.k = 4
         self.learning_data = None
         self.learning_target = None
+        self.k_list= np.arange(1,11)
         
     def train(self,L):
         self.learning_data = L[:-1,:]
@@ -56,15 +60,15 @@ class knn(model):
         self.y = y
         return self.y
     
-    def meta_find(self,LM,validation_fun,k_list):
+    def meta_find(self,LM,validation_fun):
         
-        error_array = np.zeros(k_list.shape)
-        for index,k in enumerate(k_list):
+        error_array = np.zeros(self.k_list.shape)
+        for index,k in enumerate(self.k_list):
             self.k = k
             error_array[index] = validation_fun(self,LM)
             
         # best k
-        self.k = k_list[np.argmin(error_array)]
+        self.k = self.k_list[np.argmin(error_array)]
         return (self.k,error_array)
     
 class rbfn(model):
@@ -82,6 +86,9 @@ class rbfn(model):
         self.centers = np.zeros((D,self.numCenters)) #c_i
         self.widths = np.zeros((self.numCenters,))   #sigma_i
         self.W = np.zeros((self.numCenters,))        #w_i
+        self.h_list= np.linspace(1000,10000,11)
+        self.numCenters_list=np.arange(31,41)
+        self.beta_list = np.array([0.5,1,2,4])
      
     def _calcAct(self, X):
         # calculate activations of RBFs
@@ -126,19 +133,22 @@ class rbfn(model):
         self.target = X[-1,:]
         return self.y
     
-    def meta_find(self,LM,validation_fun,h_list,numCenters_list):
+    def meta_find(self,LM,validation_fun):
         
-        n=numCenters_list.shape[0]
-        m=h_list.shape[0]
-        error_array = np.zeros((m,n))
-        for i,h in enumerate(h_list):
-            for j,numCenters in enumerate(numCenters_list):
-                self.h = h
-                self.numCenters = numCenters
-                error_array[i,j] = validation_fun(self,LM)
-            print(i/h_list.size)
+        n=self.numCenters_list.shape[0]
+        m=self.h_list.shape[0]
+        p=self.beta_list.shape[0]
+        error_array = np.zeros((m,n,p))
+        for i,h in enumerate(self.h_list):
+            for j,numCenters in enumerate(self.numCenters_list):
+                for k,beta in enumerate(self.beta_list):
+                    self.h = h
+                    self.numCenters = numCenters
+                    self.beta = beta
+                    error_array[i,j,k] = validation_fun(self,LM)
         
-        i,j = np.unravel_index(np.argmin(error_array),(m,n))
-        self.h = h_list[i]
-        self.numCenters = numCenters_list[j]
-        return (self.h,self.numCenters,error_array)
+        i,j,k = np.unravel_index(np.argmin(error_array),(m,n,p))
+        self.h = self.h_list[i]
+        self.numCenters = self.numCenters_list[j]
+        self.beta = self.beta_list[k]
+        return (self.h,self.numCenters,self.beta,error_array)
