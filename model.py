@@ -82,13 +82,12 @@ class rbfn(model):
         self.alpha = 1
         self.beta = 1
         self.epochs = 10
-        
         self.centers = np.zeros((D,self.numCenters)) #c_i
         self.widths = np.zeros((self.numCenters,))   #sigma_i
         self.W = np.zeros((self.numCenters,))        #w_i
-        self.h_list= np.linspace(1000,10000,11)
-        self.numCenters_list=np.arange(31,41)
-        self.beta_list = np.array([0.5,1,2,4])
+        self.h_list= np.linspace(1,1000,11)
+        self.numCenters_list=np.arange(21,41,2)
+        self.beta_list = np.array([0.5,1,1.5,2,4])
      
     def _calcAct(self, X):
         # calculate activations of RBFs

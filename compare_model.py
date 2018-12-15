@@ -22,11 +22,7 @@ X=dataset[:,shuffled_index]
 print("""\n# =============================================================================
 # feature selection
 # =============================================================================\n""")
-##LM = dataset[:,shuffled_index[:index_LM]]
-##T = dataset[:,shuffled_index[index_LM:]]
-##LM[:-1,:],mean_LM,std_LM = fsm.normalize(LM[:-1,:])
-##T[:-1,:],mean_T,std_T = fsm.normalize(T[:-1,:])
-##
+X,mean_x,std_x = fsm.normalize(X)
 ##LM_U,LM_sing = fsm.pca(LM[:-1,:])
 ##print("the singular values of x are : ")
 ##print(LM_sing)
@@ -44,7 +40,7 @@ print("""\n# ===================================================================
 # linear model
 # =============================================================================\n""")
 m_lin = model.linear_regression(Q)
-error_lin = vm.bootstrap(m_lin,X,vm.default)
+error_lin = vm.bootstrap(m_lin,X,vm.default)*std_x[-1]
 print('linear generalization error = ',error_lin)
 
 print("""\n# =============================================================================
@@ -52,12 +48,12 @@ print("""\n# ===================================================================
 # =============================================================================\n""")
 
 my_knn = model.knn()
-error_knn = vm.kfold(my_knn,X,method_meta=vm.default)
+error_knn = vm.kfold(my_knn,X,method_meta=vm.default)*std_x[-1]
 print('knn generalization error = ',error_knn)
 
 print("""\n# =============================================================================
 # rbfn model
 # =============================================================================\n""")
 my_rbfn = model.rbfn(Q)
-error_rbfn = vm.cross_validation(my_rbfn,X,vm.default)
+error_rbfn = vm.cross_validation(my_rbfn,X,vm.default)*std_x[-1]
 print('rbfn generalization error = ',error_rbfn)
