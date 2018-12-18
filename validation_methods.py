@@ -1,113 +1,149 @@
 import numpy as np
-
-def default(model,LM):
-    """ separates the LM set in two sets L and M, train on L,
-        evaluate on M and 
-        return error
-        Suppose LM is already shuffled
+""" General description:
+    All these methods want to obtain the generalization error of the model
+    To do so, we can apply a validation, cross-validation-k-fold,leave-one-out or bootstrap
+    All these methods separate the X set into two sets : set1 and set2
+        if method_meta is given, that means we want to evaluate the model
+            Therefore, set1 corresponds to (learning + meta) set and set2 corresponds to test set
+            First, we find the meta optimal with method_meta on (learning+meta) set
+            Then we train on set1 and evaluate on set 2
+            to obtain a generalization error of the model with optimal meta_parameters
+        else, that means we are interested in testing the model with given meta_parameters
+            #we thus train on set1 and evaluate on set2
+            #to obtain the error of generalization for these meta_parameters
+    Attention, all the methods suppose X is already shuffled
+"""
+def default(model,X,method_meta=None):
     """
-    learning_ratio = 0.75
-    length_dataset = LM.shape[1]
-    index_learning_set = int(learning_ratio*length_dataset)
-    learning_set = LM[:,:index_learning_set]
-    meta_set = LM[:,index_learning_set:]
-        
-    model.train(learning_set)
-    model.evaluate(meta_set)
-    return model.error()
-
-def cross_validation(model,LM):
-    """ separates the LM set in two sets L and M, train on L,
-        evaluate on M and repeat several times (attenion hardcoded parameter)
-        return mean error
+       General description at the beginning of the file
+       Validation method:
+       Separate X in set1 and set2 once, at random
+       Return the generalization error
     """
-    Ncross = 10
-    learning_ratio = 0.75
-    length_dataset = LM.shape[1]
-    index_learning_set = int(learning_ratio*length_dataset)
+    set_ratio = 0.75 #ratio between set1 and the original dataset
+    length_dataset = X.shape[1] #size of the original dataset
+    index_set1 = int(set_ratio*length_dataset) #index of the sepration
+    #since we suppose X is shuffled, we can just separate X 
+    set1 = X[:,:index_set1]
+    set2 = X[:,index_set1:]
+    if method_meta is not None:#if we have to find the optimal meta_parameters
+        model.meta_find(set1,method_meta)
+    model.train(set1)#train on set1
+    model.evaluate(set2)#evaluate on set2
+    return model.error()#error on set2
 
-    error_Meta = np.zeros((Ncross,))
+def cross_validation(model,X,method_meta=None):
+    """
+       General description at the beginning of the file
+       Cross-Validation method:
+       Separate X in set1 and set2 several times, at random
+       Return the mean generalization error
+    """
+    Ncross = 10 #number of repetition
+    set_ratio = 0.75
+    length_dataset = X.shape[1]
+    index_set1 = int(set_ratio*length_dataset)
+
+    error_array = np.zeros((Ncross,))
     for i in range(Ncross):
-        #first, shuffle the LM set
+        #first, shuffle the set1 set
         shuffled_index = np.random.permutation(length_dataset)
-        LM = LM[:,shuffled_index]
-        #then define new learning and meta sets
-        learning_set = LM[:,:index_learning_set]
-        meta_set = LM[:,index_learning_set:]
-        #then, train the model on the learning set
-        model.train(learning_set)
-        #and evaluate on the meta set
-        model.evaluate(meta_set)
-        error_Meta[i]=model.error()
+        X = X[:,shuffled_index]
+        #then define new set1 and set2
+        set1 = X[:,:index_set1]
+        set2 = X[:,index_set1:]
+        if method_meta is not None:#if we have to find the optimal meta_parameters
+            model.meta_find(set1,method_meta)
+            print("cross_validation : iter = {}/{}".format(i+1,Ncross))
+        #then, train the model on set1
+        model.train(set1)
+        #and evaluate on set2
+        model.evaluate(set2)
+        error_array[i]=model.error()#generalization error on set 2
     
-    return(np.mean(error_Meta))
+    return(np.mean(error_array))
 
-def kfold(model,LM,*is_leave_one_out):
-    """ separates the LM set in N sets train an N-1 sets,
-        and evaluate on the remaining set. 
-        return mean error
-        suppose
+def kfold(model,X,is_leave_one_out = False,method_meta = None):
     """
-    length_dataset = LM.shape[1]
-    if len(is_leave_one_out)==1:
+       General description at the beginning of the file
+       kfold method:
+       Separate X in N sets, set1 = (N-1) subsets and set2 = 1 subset
+       Return the mean generalization error on the N subsets
+       if is_leave_one_out, apply kfold with N= length(X)
+    """
+    length_dataset = X.shape[1]
+    if is_leave_one_out: #if we do leave_one_out
         N=length_dataset
     else:
-        N = 5
+        N = 10
         
-    length_block =int(length_dataset/N);
-    error_Meta = np.zeros((N,))
+    length_block =int(length_dataset/N)
+    error_array = np.zeros((N,))
     for i in range(N):
-        #define the index of start and end of the validation set
+        #define the index of start and end of set1
         indexStart = i*length_block
         indexEnd = (i+1)*length_block
-        index_learning=np.concatenate((np.arange(0,indexStart) ,np.arange(indexEnd,length_dataset)))
-        index_Meta=np.arange(indexStart,indexEnd)
-        #then define new learning and meta sets
-        learning_set = LM[:,index_learning]
-        meta_set = LM[:,index_Meta]
-        #then, train the model on the learning set
-        model.train(learning_set)
-        #and evaluate on the meta set
-        model.evaluate(meta_set)
-        error_Meta[i]=model.error()
-    return(np.mean(error_Meta))
+        index_set1=np.concatenate((np.arange(0,indexStart) ,np.arange(indexEnd,length_dataset)))
+        index_set2=np.arange(indexStart,indexEnd)
+        #then define new set1 and set2
+        set1 = X[:,index_set1]
+        set2 = X[:,index_set2]
+        if method_meta is not None:#if we have to find the optimal meta_parameters
+            model.meta_find(set1,method_meta)
+            print("kfold (length_block : {}) : iter = {}/{}".format(length_block,i+1,N))
+        #then, train the model on set1
+        model.train(set1)
+        #and evaluate on set2
+        model.evaluate(set2)
+        error_array[i]=model.error() #generalization error on set 2
+        
+    return(np.mean(error_array))
 
-def leave_one_out(model,LM):
-    """ separates the LM set in sets train meta sets,
-        and evaluate on only one element. 
-        return mean error
+def leave_one_out(model,X,method_meta=None):
     """
-    return(kfold(model,LM,True))
-
-def bootstrap(model,S):
-    """ apply the bootstrap method on S
+       General description at the beginning of the file
+       leave-one-out method:
+       k_fold method with N = length(X)
     """
-    ratioSubS = 0.75
-    Nboot=10
-    length_dataset = S.shape[1]
-    size_SubS = int(ratioSubS*length_dataset)
+    if method_meta is not None:#if we have to find the optimal meta_parameters
+        return(kfold(model,X,True,method_meta))
+    else: #else
+        return(kfold(model,X,True))
     
-    opt_array = np.zeros((Nboot,))
+def bootstrap(model,X,method_meta=None):
+    """ apply the bootstrap method on X
+    """
+    ratio_Subsets = 0.75
+    Nboot=10 #number of bootstrap iteration
+    length_dataset = X.shape[1]
+    size_Subsets = int(ratio_Subsets*length_dataset)
+    
+    opt_array = np.zeros((Nboot,))#array for the optimisms
     for i in range(Nboot):
-        #first, draw with replacement from S
-        #to obtain S*
-        shuffled_index=np.random.choice(length_dataset, size_SubS, replace=True)
-        subS = S[:,shuffled_index]
-        #then, train the model on SubS
-        model.train(subS)
-        #and evaluate on SubS and S
-        model.evaluate(subS)
-        EsubSsubS=model.error()
-        model.evaluate(S)
-        EsubSS=model.error()
+        #first, draw with replacement from X
+        #to obtain X*
+        shuffled_index=np.random.choice(length_dataset, size_Subsets, replace=True)
+        set1 = X[:,shuffled_index]
+        if method_meta is not None:#if we have to find the optimal meta_parameters
+            model.meta_find(set1,method_meta)
+            print("bootstrap : iter = {}/{}".format(i+1,Nboot))
+        #then, train the model on set1
+        model.train(set1)
+        #and evaluate on set1 and X
+        model.evaluate(set1)
+        Eset1set1=model.error()
+        model.evaluate(X)
+        Eset1X=model.error()
         #compute optimism:
-        opt_array[i] = EsubSS-EsubSsubS
+        opt_array[i] = Eset1X-Eset1set1
     
-    #train the model on S
-    model.train(S)
-    #and evaluate in S
-    model.evaluate(S)
-    ESS=model.error()
+    if method_meta is not None:#if we have to find the optimal meta_parameters
+            model.meta_find(X,method_meta)
+    #train the model on X
+    model.train(X)
+    #and evaluate on X
+    model.evaluate(X)
+    EXX=model.error()
                
-    return ESS+np.mean(opt_array)
+    return EXX+np.mean(opt_array)
     
