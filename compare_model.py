@@ -32,28 +32,35 @@ print()
 ##print("the correlations between inputs and output are : ")
 ##print(LM_corr)
 
-Q = 7
-X =  np.concatenate((X_U[:,:Q].T@X[:-1,:],np.array([X[-1,:]])),axis=0)
+Q = 8
+#X =  np.concatenate((X_U[:,:Q].T@X[:-1,:],np.array([X[-1,:]])),axis=0)
 print(X.shape)
 
-print("""\n# =============================================================================
-# linear model
-# =============================================================================\n""")
-m_lin = model.linear_regression(Q)
-error_lin = vm.kfold(m_lin,X,method_meta=vm.kfold)*std_x[-1]
-print('linear generalization error = ',error_lin)
+#print("""\n# =============================================================================
+## linear model
+## =============================================================================\n""")
+#m_lin = model.linear_regression(Q)
+#error_lin = vm.kfold(m_lin,X,method_meta=vm.kfold)*std_x[-1]
+#print('linear generalization error = ',error_lin)
+#
+#print("""\n# =============================================================================
+## knn model
+## =============================================================================\n""")
+#
+#my_knn = model.knn()
+#error_knn = vm.kfold(my_knn,X,method_meta=vm.kfold)*std_x[-1]
+#print('knn generalization error = ',error_knn)
+#
+#print("""\n# =============================================================================
+## rbfn model
+## =============================================================================\n""")
+#my_rbfn = model.rbfn(Q)
+#error_rbfn = vm.kfold(my_rbfn,X,method_meta=vm.kfold)*std_x[-1]
+#print('rbfn generalization error = ',error_rbfn)
 
 print("""\n# =============================================================================
-# knn model
+# mlp model
 # =============================================================================\n""")
-
-my_knn = model.knn()
-error_knn = vm.kfold(my_knn,X,method_meta=vm.kfold)*std_x[-1]
-print('knn generalization error = ',error_knn)
-
-print("""\n# =============================================================================
-# rbfn model
-# =============================================================================\n""")
-my_rbfn = model.rbfn(Q)
-error_rbfn = vm.kfold(my_rbfn,X,method_meta=vm.kfold)*std_x[-1]
-print('rbfn generalization error = ',error_rbfn)
+my_mlp = model.mlp2()
+error_mlp = vm.bootstrap(my_mlp,X,method_meta=vm.bootstrap)*std_x[-1]
+print('mlp generalization error = ',error_mlp)

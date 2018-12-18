@@ -5,6 +5,7 @@ import model
 import validation_methods as vm
 import feature_selection_methods as fsm
 import plot_methods as myplt
+import time
 
 plt.close('all')
 print("""\n# =============================================================================
@@ -89,14 +90,19 @@ print("""\n# ===================================================================
 # mlp2 model
 # =============================================================================\n""")
 my_mlp = model.mlp2()
-act_funct,n_nodes, error_array_mlp2 = my_mlp.meta_find(LM_selected,vm.default)
+
+t1 = time.time()
+act_funct,n_nodes,learning_rate, error_array_mlp2 = my_mlp.meta_find(LM_selected,vm.default)
+print(time.time()-t1)
 error_array_mlp2=error_array_mlp2*std_dataset[-1]
 print("act_opt = {}".format(act_funct))
 print("n_nodes_opt = {}".format(n_nodes))
+print("learning rate = {}".format(learning_rate))
+
 print("error_array = ")
 print(error_array_mlp2)
-
 my_mlp.train(LM_selected)
+
 y_mlp = my_mlp.evaluate(T_selected)*std_dataset[-1]+mean_dataset[-1]
 e_mlp = my_mlp.error()*std_dataset[-1]
 

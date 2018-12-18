@@ -1,14 +1,7 @@
 import numpy as np
 import vq_methods as vqm
 import tensorflow as tf
-from tensorflow import keras
-from keras import Sequential 
-from keras import layers
-from keras import optimizers
-import matplotlib.pyplot as plt
-import pandas as pd
-
-
+import keras as kr
 
 class model:
     def __init__(self):
@@ -170,14 +163,16 @@ class rbfn(model):
         return (self.h,self.numCenters,self.beta,error_array)
     
     
-class mlp2(model):
+class mlp2(model): #for mlp with 2 layers
     def __init__(self):
         model()
-        self.nlayers = 2
-        self.act_fun = tf.nn.softmax
-        self.n_units = 6
-        self.act_fun_list = np.array([tf.nn.softmax])
-        self.n_units_list = [6,]#np.arange(1,9)
+        #default parameters
+        self.act_fun = tf.nn.relu
+        self.n_units = 8
+        self.learning_rate= 0.01
+        self.act_fun_list = np.array([tf.nn.relu,tf.nn.softmax])
+        self.n_units_list = [6,8,10,12]
+        self.learning_rate_list = [0.05,0.1,0.2,0.25]
         self.intern_model = None
         
     def train(self,L):
@@ -185,39 +180,40 @@ class mlp2(model):
         target = L[-1,:].T #1xN
         #first, we create the tensor_flow intern model
         #architecture of the NN
-        self.intern_model=Sequential([
-                layers.Dense(self.n_units,activation=self.act_fun,input_shape=(L.shape[0]-1,)),
-                layers.Dense(1),#final layer
+        self.intern_model=kr.Sequential([
+                kr.layers.Dense(self.n_units,activation=self.act_fun,input_shape=(L.shape[0]-1,)),
+                kr.layers.Dense(1),#final layer
             ])
         #optimizer we use : stochastic gradient descent
-        self.intern_model.compile(loss=['mean_squared_error',],optimizer='sgd',metrics=['mean_squared_error',])
-        self.intern_model.summary()
+        self.intern_model.compile(loss=['mean_squared_error',],optimizer=kr.optimizers.SGD(lr=self.learning_rate, momentum=0.0, decay=0.0, nesterov=False),metrics=['mean_squared_error',])
         #then we train the model
         #we do not want to do any validation at that step
-        n_epochs=100
-        self.intern_model.fit(features,target,epochs=n_epochs,validation_split = 0.2,
-                           verbose=1,batch_size=3,shuffle=True)
+        n_epochs=400
+        self.intern_model.fit(features,target,epochs=n_epochs,validation_split = 0,
+                           verbose=0,batch_size=32,shuffle=True)
         
-        
-        #history = (if needed)
     def evaluate(self,T):
         features = T[:-1,:].T # features DxN
         self.y=self.intern_model.predict(features)
-        self.target = T[-1,:].T
+        self.target = np.array([T[-1,:]]).T
         return self.y
     
     def meta_find(self,LM,validation_fun):
         n=len(self.act_fun_list)
         m=len(self.n_units_list)
-        error_array = np.zeros((n,m))
+        p=len(self.learning_rate_list)
+        error_array = np.zeros((n,m,p))
         for i,act_fun in enumerate(self.act_fun_list):
             for j,n_units in enumerate(self.n_units_list):
-                self.act_fun=act_fun
-                self.n_units = n_units
-                error_array[i,j] = validation_fun(self,LM)
+                for k,lr in enumerate(self.learning_rate_list):
+                    self.act_fun=act_fun
+                    self.n_units = n_units
+                    self.learning_rate = lr
+                    error_array[i,j,k] = validation_fun(self,LM)
             
-            print("iteration : {}/{}".format(j+1,m))
-        i,j = np.unravel_index(np.argmin(error_array),(m,n))
+            print("iteration : {}/{}".format((i+1)*(j+1)*(k+1),p*n*m))
+        i,j,k = np.unravel_index(np.argmin(error_array),(n,m,p))
         self.act_fun = self.act_fun_list[i]
         self.n_units = self.n_units_list[j]
-        return (self.act_fun,self.n_units,error_array)
+        self.learning_rate = self.learning_rate_list[k]
+        return (self.act_fun,self.n_units,self.learning_rate,error_array)
