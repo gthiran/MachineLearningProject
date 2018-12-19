@@ -5,6 +5,7 @@ import model
 import validation_methods as vm
 import feature_selection_methods as fsm
 import plot_methods as myplt
+import time
 
 plt.close('all')
 print("""\n# =============================================================================
@@ -23,37 +24,46 @@ print("""\n# ===================================================================
 # feature selection
 # =============================================================================\n""")
 X,mean_x,std_x = fsm.normalize(X)
-##LM_U,LM_sing = fsm.pca(LM[:-1,:])
-##print("the singular values of x are : ")
-##print(LM_sing)
-##print()
-##
+X_U,X_sing = fsm.pca(X[:-1,:])
+print("the singular values of x are : ")
+print(X_sing)
+print()
+
 ##LM_corr = fsm.correlation(LM)
 ##print("the correlations between inputs and output are : ")
 ##print(LM_corr)
 
 Q = 8
-##LM_selected=LM# = np.concatenate((LM_U[:,:Q].T@LM[:-1,:],np.array([LM[-1,:]])),axis=0)
-##T_selected=T#  = np.concatenate((LM_U[:,:Q].T@T[:-1,:],np.array([T[-1,:]])),axis=0)
+#X =  np.concatenate((X_U[:,:Q].T@X[:-1,:],np.array([X[-1,:]])),axis=0)
+print(X.shape)
+
+#print("""\n# =============================================================================
+## linear model
+## =============================================================================\n""")
+#m_lin = model.linear_regression(Q)
+#error_lin = vm.kfold(m_lin,X,method_meta=vm.kfold)*std_x[-1]
+#print('linear generalization error = ',error_lin)
+#
+#print("""\n# =============================================================================
+## knn model
+## =============================================================================\n""")
+#
+#my_knn = model.knn()
+#error_knn = vm.kfold(my_knn,X,method_meta=vm.kfold)*std_x[-1]
+#print('knn generalization error = ',error_knn)
+#
+#print("""\n# =============================================================================
+## rbfn model
+## =============================================================================\n""")
+#my_rbfn = model.rbfn(Q)
+#error_rbfn = vm.kfold(my_rbfn,X,method_meta=vm.kfold)*std_x[-1]
+#print('rbfn generalization error = ',error_rbfn)
 
 print("""\n# =============================================================================
-# linear model
+# mlp model
 # =============================================================================\n""")
-m_lin = model.linear_regression(Q)
-error_lin = vm.bootstrap(m_lin,X,vm.default)*std_x[-1]
-print('linear generalization error = ',error_lin)
-
-print("""\n# =============================================================================
-# knn model
-# =============================================================================\n""")
-
-my_knn = model.knn()
-error_knn = vm.kfold(my_knn,X,method_meta=vm.default)*std_x[-1]
-print('knn generalization error = ',error_knn)
-
-print("""\n# =============================================================================
-# rbfn model
-# =============================================================================\n""")
-my_rbfn = model.rbfn(Q)
-error_rbfn = vm.cross_validation(my_rbfn,X,vm.default)*std_x[-1]
-print('rbfn generalization error = ',error_rbfn)
+my_mlp = model.mlp2()
+t1=time.time()
+error_mlp = vm.default(my_mlp,X,method_meta=vm.bootstrap)*std_x[-1]
+print(time.time()-t1)
+print('mlp generalization error = ',error_mlp)

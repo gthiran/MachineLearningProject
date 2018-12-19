@@ -113,6 +113,7 @@ def leave_one_out(model,X,method_meta=None):
 def bootstrap(model,X,method_meta=None):
     """ apply the bootstrap method on X
     """
+    print('bootstrap, begin')
     ratio_Subsets = 0.75
     Nboot=10 #number of bootstrap iteration
     length_dataset = X.shape[1]
@@ -125,8 +126,10 @@ def bootstrap(model,X,method_meta=None):
         shuffled_index=np.random.choice(length_dataset, size_Subsets, replace=True)
         set1 = X[:,shuffled_index]
         if method_meta is not None:#if we have to find the optimal meta_parameters
-            model.meta_find(set1,method_meta)
             print("bootstrap : iter = {}/{}".format(i+1,Nboot))
+            model.meta_find(set1,method_meta)
+            print('metafound')
+            
         #then, train the model on set1
         model.train(set1)
         #and evaluate on set1 and X
