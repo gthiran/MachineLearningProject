@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.matlib import repmat
 
 """ vq methods """
 def init_centroids(X,nCentroids):
@@ -13,7 +12,7 @@ def fsens_learning(X,alpha,beta,nCentroids,epochs):
     
     for i in np.arange(epochs):
         for j in np.arange(X.shape[1]):
-            d = U*np.linalg.norm(X_c-repmat(X[:,j],nCentroids,1).T,ord=2,axis=0)
+            d = U*np.linalg.norm(X_c-np.array([X[:,j]]).T,ord=2,axis=0)
             index = np.argmin(d)
             U[index]+=1
             X_c[:,index]+=alpha*(X[:,j]-X_c[:,index])
